@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MovieScene.h"
 #include "GameFramework/Actor.h"
+#include "Sections/MovieScene3DTransformSection.h"
 #include "SequencerFactory.generated.h"
 
 USTRUCT()
@@ -25,17 +27,23 @@ class SEQUENCERRUNTIME_API ASequencerFactory : public AActor
 	
 public:	
 	ASequencerFactory();
-	
+
 protected:
 	virtual void BeginPlay() override;
 
+	void CreateSequence(UMovieScene*& MovieScene);
+	void BindObjectToSequence(UMovieScene* MovieScene, FGuid& BindingID);
+	static void AddTransformTrack(UMovieScene* MovieScene, FGuid BindingID, UMovieScene3DTransformSection*& TransformSection);
+	static FMovieSceneDoubleChannel* GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, uint32 ChannelIndex);
+	void AddKeyFrames(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection);
+	void PlaySequence() const;
+	
 	UPROPERTY(VisibleAnywhere)
-	class ULevelSequence* LevelSequence;
+	class ULevelSequence* LevelSequence = nullptr;
 
 public:	
-
 	UPROPERTY(EditAnywhere)
-	AActor* TargetActor;
+	AActor* TargetActor = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	TArray<FTransformKeyframe> Keyframes;
