@@ -130,12 +130,12 @@ void ASequencerFactory::AddKeyFrameToChannel(FMovieSceneDoubleChannel* Channel, 
 
 void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DTransformSection* TransformSection) const
 {
+	const FMovieSceneChannelProxy& TargetChannelProxy = TransformSection->GetChannelProxy();
+	
 	const TArray<FMovieSceneBinding>& ObjectBindings = SourceLevelSequence->GetMovieScene()->GetBindings();
-
 	for (const FMovieSceneBinding& Binding : ObjectBindings)
 	{
 		const TArray<UMovieSceneTrack*>& Tracks = Binding.GetTracks();
-
 		for (UMovieSceneTrack* Track : Tracks)
 		{
 			const TArray<UMovieSceneSection*>& TransformSections = Cast<UMovieScene3DTransformTrack>(Track)->GetAllSections();
@@ -144,7 +144,6 @@ void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DT
 				UMovieScene3DTransformSection* SourceTransformSection = Cast<UMovieScene3DTransformSection>(Section);
 
 				const FMovieSceneChannelProxy& SourceChannelProxy = SourceTransformSection->GetChannelProxy();
-				FMovieSceneChannelProxy& TargetChannelProxy = TransformSection->GetChannelProxy();
 
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 0); // X
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 1); // Y
