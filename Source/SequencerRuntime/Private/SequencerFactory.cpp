@@ -70,26 +70,21 @@ void ASequencerFactory::AddTransformTrack(UMovieScene* MovieScene, const FGuid B
 	TransformTrack->AddSection(*TransformSection);
 }
 
-FMovieSceneDoubleChannel* ASequencerFactory::GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, const uint32 ChannelIndex)
-{
-	return ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(ChannelIndex);
-}
-
 void ASequencerFactory::AddKeyFramesFromArray(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection)
 {
 	const FMovieSceneChannelProxy& ChannelProxy = TransformSection->GetChannelProxy();
 
-	FMovieSceneDoubleChannel* TranslationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 0); // X
-	FMovieSceneDoubleChannel* TranslationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 1); // Y
-	FMovieSceneDoubleChannel* TranslationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 2); // Z
+	FMovieSceneDoubleChannel* TranslationXChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(0); // X
+	FMovieSceneDoubleChannel* TranslationYChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(1); // Y
+	FMovieSceneDoubleChannel* TranslationZChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(2); // Z
 
-	FMovieSceneDoubleChannel* RotationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 3); // Roll
-	FMovieSceneDoubleChannel* RotationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 4); // Pitch
-	FMovieSceneDoubleChannel* RotationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 5); // Yaw
+	FMovieSceneDoubleChannel* RotationXChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(3); // Roll
+	FMovieSceneDoubleChannel* RotationYChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(4); // Pitch
+	FMovieSceneDoubleChannel* RotationZChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(5); // Yaw
 
-	FMovieSceneDoubleChannel* ScaleXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 6); // Scale X
-	FMovieSceneDoubleChannel* ScaleYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 7); // Scale Y
-	FMovieSceneDoubleChannel* ScaleZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 8); // Scale Z
+	FMovieSceneDoubleChannel* ScaleXChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(6); // Scale X
+	FMovieSceneDoubleChannel* ScaleYChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(7); // Scale Y
+	FMovieSceneDoubleChannel* ScaleZChannel = ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(8); // Scale Z
 
 	for (int32 i = 0; i < Keyframes.Num(); ++i)
 	{
@@ -169,8 +164,8 @@ void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DT
 
 void ASequencerFactory::CopyChannel(const FMovieSceneChannelProxy& SourceChannelProxy, const FMovieSceneChannelProxy& TargetChannelProxy, const uint32 ChannelIndex)
 {
-	FMovieSceneDoubleChannel* SourceChannel = GetMovieSceneDoubleChannel(SourceChannelProxy, ChannelIndex);
-	FMovieSceneDoubleChannel* TargetChannel = GetMovieSceneDoubleChannel(TargetChannelProxy, ChannelIndex);
+	FMovieSceneDoubleChannel* SourceChannel = SourceChannelProxy.GetChannel<FMovieSceneDoubleChannel>(ChannelIndex);
+	FMovieSceneDoubleChannel* TargetChannel = TargetChannelProxy.GetChannel<FMovieSceneDoubleChannel>(ChannelIndex);
 
 	const TArrayView<const FFrameNumber>& SourceTimes = SourceChannel->GetTimes();
 	const TArrayView<const FMovieSceneDoubleValue>& SourceValues = SourceChannel->GetValues();

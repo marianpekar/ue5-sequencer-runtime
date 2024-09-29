@@ -63,7 +63,6 @@ protected:
 	
 	static void AddTransformTrack(UMovieScene* MovieScene, FGuid BindingID, UMovieScene3DTransformSection*& TransformSection);
 	
-	static FMovieSceneDoubleChannel* GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, uint32 ChannelIndex);
 	void AddKeyFramesFromArray(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection);
 	static void AddKeyFrameToChannel(FMovieSceneDoubleChannel* Channel, const FFrameNumber& FrameNumber, double Value, EKeyInterpolation KeyInterpolation);
 
