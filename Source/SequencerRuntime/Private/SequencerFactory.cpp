@@ -87,12 +87,17 @@ void ASequencerFactory::AddKeyFramesFromArray(const UMovieScene* MovieScene, con
 	FMovieSceneDoubleChannel* RotationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 4); // Pitch
 	FMovieSceneDoubleChannel* RotationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 5); // Yaw
 
+	FMovieSceneDoubleChannel* ScaleXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 6); // Scale X
+	FMovieSceneDoubleChannel* ScaleYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 7); // Scale Y
+	FMovieSceneDoubleChannel* ScaleZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 8); // Scale Z
+
 	for (int32 i = 0; i < Keyframes.Num(); ++i)
 	{
 		auto [Transform, TimeInSeconds, KeyInterpolation] = Keyframes[i];
 
 		const FVector Location = Transform.GetLocation();
 		const FRotator Rotation = Transform.GetRotation().Rotator();
+		const FVector Scale = Transform.GetScale3D();
 
 		const FFrameNumber FrameNumber = MovieScene->GetTickResolution().AsFrameNumber(TimeInSeconds);
 		
@@ -103,6 +108,10 @@ void ASequencerFactory::AddKeyFramesFromArray(const UMovieScene* MovieScene, con
 		AddKeyFrameToChannel(RotationXChannel, FrameNumber, Rotation.Roll, KeyInterpolation);
 		AddKeyFrameToChannel(RotationYChannel, FrameNumber, Rotation.Pitch, KeyInterpolation);
 		AddKeyFrameToChannel(RotationZChannel, FrameNumber, Rotation.Yaw, KeyInterpolation);
+
+		AddKeyFrameToChannel(ScaleXChannel, FrameNumber, Scale.X, KeyInterpolation);
+		AddKeyFrameToChannel(ScaleYChannel, FrameNumber, Scale.Y, KeyInterpolation);
+		AddKeyFrameToChannel(ScaleZChannel, FrameNumber, Scale.Z, KeyInterpolation);
 	}
 }
 
@@ -149,6 +158,10 @@ void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DT
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 3); // Roll
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 4); // Pitch
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 5); // Yaw
+
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 6); // Scale X
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 7); // Scale Y
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 8); // Scale Z
 			}
 		}
 	}
