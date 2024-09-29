@@ -23,8 +23,16 @@ void ASequencerFactory::BeginPlay()
 	UMovieScene3DTransformSection* TransformSection;
 	AddTransformTrack(MovieScene, BindingID, TransformSection);
 
-	AddKeyFrames(MovieScene, TransformSection);
-
+	switch (KeyframesDataSource)
+	{
+	case EKeyframesDataSource::Array:
+		AddKeyFramesFromArray(MovieScene, TransformSection);
+		break;
+	case EKeyframesDataSource::SourceLevelSequence:
+		AddKeyFramesFromSourceLevelSequence(TransformSection);
+		break;
+	}
+	
 	PlaySequence();
 }
 
@@ -67,17 +75,17 @@ FMovieSceneDoubleChannel* ASequencerFactory::GetMovieSceneDoubleChannel(const FM
 	return ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(ChannelIndex);
 }
 
-void ASequencerFactory::AddKeyFrames(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection)
+void ASequencerFactory::AddKeyFramesFromArray(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection)
 {
 	const FMovieSceneChannelProxy& ChannelProxy = TransformSection->GetChannelProxy();
 
-	FMovieSceneDoubleChannel* TranslationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 0);
-	FMovieSceneDoubleChannel* TranslationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 1);
-	FMovieSceneDoubleChannel* TranslationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 2);
+	FMovieSceneDoubleChannel* TranslationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 0); // X
+	FMovieSceneDoubleChannel* TranslationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 1); // Y
+	FMovieSceneDoubleChannel* TranslationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 2); // Z
 
-	FMovieSceneDoubleChannel* RotationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 3);
-	FMovieSceneDoubleChannel* RotationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 4);
-	FMovieSceneDoubleChannel* RotationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 5);
+	FMovieSceneDoubleChannel* RotationXChannel = GetMovieSceneDoubleChannel(ChannelProxy, 3); // Roll
+	FMovieSceneDoubleChannel* RotationYChannel = GetMovieSceneDoubleChannel(ChannelProxy, 4); // Pitch
+	FMovieSceneDoubleChannel* RotationZChannel = GetMovieSceneDoubleChannel(ChannelProxy, 5); // Yaw
 
 	for (int32 i = 0; i < Keyframes.Num(); ++i)
 	{
@@ -95,6 +103,50 @@ void ASequencerFactory::AddKeyFrames(const UMovieScene* MovieScene, const UMovie
 		AddKeyToChannel(RotationXChannel, FrameNumber, Rotation.Roll, EMovieSceneKeyInterpolation::Auto);
 		AddKeyToChannel(RotationYChannel, FrameNumber, Rotation.Pitch, EMovieSceneKeyInterpolation::Auto);
 		AddKeyToChannel(RotationZChannel, FrameNumber, Rotation.Yaw, EMovieSceneKeyInterpolation::Auto);
+	}
+}
+
+void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DTransformSection* TransformSection) const
+{
+	const TArray<FMovieSceneBinding>& ObjectBindings = SourceLevelSequence->GetMovieScene()->GetBindings();
+	
+	for (const FMovieSceneBinding& Binding : ObjectBindings)
+	{
+		const TArray<UMovieSceneTrack*>& Tracks = Binding.GetTracks();
+		
+		for (UMovieSceneTrack* Track : Tracks)
+		{
+			const TArray<UMovieSceneSection*>& TransformSections = Cast<UMovieScene3DTransformTrack>(Track)->GetAllSections();
+			for (UMovieSceneSection* Section : TransformSections)
+			{
+				UMovieScene3DTransformSection* SourceTransformSection = Cast<UMovieScene3DTransformSection>(Section);
+
+				const FMovieSceneChannelProxy& SourceChannelProxy = SourceTransformSection->GetChannelProxy();
+				FMovieSceneChannelProxy& TargetChannelProxy = TransformSection->GetChannelProxy();
+			
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 0); // X
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 1); // Y
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 2); // Z
+			
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 3); // Roll
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 4); // Pitch
+				CopyChannel(SourceChannelProxy, TargetChannelProxy, 5); // Yaw
+			}
+		}
+	}
+}
+
+void ASequencerFactory::CopyChannel(const FMovieSceneChannelProxy& SourceChannelProxy, const FMovieSceneChannelProxy& TargetChannelProxy, const uint32 ChannelIndex)
+{
+	FMovieSceneDoubleChannel* SourceChannel = GetMovieSceneDoubleChannel(SourceChannelProxy, ChannelIndex);
+	FMovieSceneDoubleChannel* TargetChannel = GetMovieSceneDoubleChannel(TargetChannelProxy, ChannelIndex);
+	
+	const TArrayView<const FFrameNumber>& SourceTimes = SourceChannel->GetTimes();
+	const TArrayView<const FMovieSceneDoubleValue>& SourceValues = SourceChannel->GetValues();
+
+	for (int32 KeyIndex = 0; KeyIndex < SourceTimes.Num(); ++KeyIndex)
+	{
+		TargetChannel->AddLinearKey(SourceTimes[KeyIndex], SourceValues[KeyIndex].Value);
 	}
 }
 

@@ -8,10 +8,13 @@
 #include "Sections/MovieScene3DTransformSection.h"
 #include "SequencerFactory.generated.h"
 
+class ULevelSequence;
+
 USTRUCT()
 struct FTransformKeyframe
 {
 	GENERATED_BODY()
+
 public:
 	UPROPERTY(EditAnywhere)
 	FTransform Transform;
@@ -19,6 +22,14 @@ public:
 	UPROPERTY(EditAnywhere)
 	double TimeInSeconds;
 };
+
+UENUM()
+enum class EKeyframesDataSource : uint8
+{
+	Array,
+	SourceLevelSequence
+};
+
 
 UCLASS()
 class SEQUENCERRUNTIME_API ASequencerFactory : public AActor
@@ -32,14 +43,21 @@ protected:
 	virtual void BeginPlay() override;
 
 	void CreateSequence(UMovieScene*& MovieScene);
+	
 	void BindObjectToSequence(UMovieScene* MovieScene, FGuid& BindingID);
+	
 	static void AddTransformTrack(UMovieScene* MovieScene, FGuid BindingID, UMovieScene3DTransformSection*& TransformSection);
+	
 	static FMovieSceneDoubleChannel* GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, uint32 ChannelIndex);
-	void AddKeyFrames(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection);
+	void AddKeyFramesFromArray(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection);
+
+	void AddKeyFramesFromSourceLevelSequence(const UMovieScene3DTransformSection* TransformSection) const;
+	static void CopyChannel(const FMovieSceneChannelProxy& SourceChannelProxy, const FMovieSceneChannelProxy& TargetChannelProxy, uint32 ChannelIndex);
+	
 	void PlaySequence() const;
 	
 	UPROPERTY(VisibleAnywhere)
-	class ULevelSequence* LevelSequence = nullptr;
+	ULevelSequence* LevelSequence = nullptr;
 
 public:	
 	UPROPERTY(EditAnywhere)
@@ -53,4 +71,10 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	double SequenceLengthInSeconds = 60;
+
+	UPROPERTY(EditAnywhere)
+	ULevelSequence* SourceLevelSequence = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	EKeyframesDataSource KeyframesDataSource = EKeyframesDataSource::Array;
 };
