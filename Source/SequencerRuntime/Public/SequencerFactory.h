@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MovieScene.h"
-#include "GameFramework/Actor.h"
-#include "Sections/MovieScene3DTransformSection.h"
 #include "SequencerFactory.generated.h"
 
+class AActor;
+class UMovieScene;
 class ULevelSequence;
+class UMovieScene3DTransformSection;
+struct FMovieSceneChannelProxy;
+struct FMovieSceneDoubleChannel;
 
 USTRUCT()
 struct FTransformKeyframe
