@@ -11,6 +11,16 @@ class ULevelSequence;
 class UMovieScene3DTransformSection;
 struct FMovieSceneChannelProxy;
 struct FMovieSceneDoubleChannel;
+struct FFrameNumber;
+
+UENUM()
+enum class EKeyInterpolation : uint8
+{
+	Auto,
+	Linear,
+	Constant,
+	Cubic
+};
 
 USTRUCT()
 struct FTransformKeyframe
@@ -23,6 +33,9 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	double TimeInSeconds;
+
+	UPROPERTY(EditAnywhere)
+	EKeyInterpolation KeyInterpolation;
 };
 
 UENUM()
@@ -52,6 +65,7 @@ protected:
 	
 	static FMovieSceneDoubleChannel* GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, uint32 ChannelIndex);
 	void AddKeyFramesFromArray(const UMovieScene* MovieScene, const UMovieScene3DTransformSection* TransformSection);
+	static void AddKeyFrameToChannel(FMovieSceneDoubleChannel* Channel, const FFrameNumber& FrameNumber, double Value, EKeyInterpolation KeyInterpolation);
 
 	void AddKeyFramesFromSourceLevelSequence(const UMovieScene3DTransformSection* TransformSection) const;
 	static void CopyChannel(const FMovieSceneChannelProxy& SourceChannelProxy, const FMovieSceneChannelProxy& TargetChannelProxy, uint32 ChannelIndex);

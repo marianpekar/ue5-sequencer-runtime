@@ -32,7 +32,7 @@ void ASequencerFactory::BeginPlay()
 		AddKeyFramesFromSourceLevelSequence(TransformSection);
 		break;
 	}
-	
+
 	PlaySequence();
 }
 
@@ -70,7 +70,7 @@ void ASequencerFactory::AddTransformTrack(UMovieScene* MovieScene, const FGuid B
 	TransformTrack->AddSection(*TransformSection);
 }
 
-FMovieSceneDoubleChannel* ASequencerFactory::GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, uint32 ChannelIndex)
+FMovieSceneDoubleChannel* ASequencerFactory::GetMovieSceneDoubleChannel(const FMovieSceneChannelProxy& ChannelProxy, const uint32 ChannelIndex)
 {
 	return ChannelProxy.GetChannel<FMovieSceneDoubleChannel>(ChannelIndex);
 }
@@ -89,31 +89,49 @@ void ASequencerFactory::AddKeyFramesFromArray(const UMovieScene* MovieScene, con
 
 	for (int32 i = 0; i < Keyframes.Num(); ++i)
 	{
-		auto [Transform, TimeInSeconds] = Keyframes[i];
+		auto [Transform, TimeInSeconds, KeyInterpolation] = Keyframes[i];
 
 		const FVector Location = Transform.GetLocation();
 		const FRotator Rotation = Transform.GetRotation().Rotator();
 
 		const FFrameNumber FrameNumber = MovieScene->GetTickResolution().AsFrameNumber(TimeInSeconds);
+		
+		AddKeyFrameToChannel(TranslationXChannel, FrameNumber, Location.X, KeyInterpolation);
+		AddKeyFrameToChannel(TranslationYChannel, FrameNumber, Location.Y, KeyInterpolation);
+		AddKeyFrameToChannel(TranslationZChannel, FrameNumber, Location.Z, KeyInterpolation);
 
-		AddKeyToChannel(TranslationXChannel, FrameNumber, Location.X, EMovieSceneKeyInterpolation::Auto);
-		AddKeyToChannel(TranslationYChannel, FrameNumber, Location.Y, EMovieSceneKeyInterpolation::Auto);
-		AddKeyToChannel(TranslationZChannel, FrameNumber, Location.Z, EMovieSceneKeyInterpolation::Auto);
+		AddKeyFrameToChannel(RotationXChannel, FrameNumber, Rotation.Roll, KeyInterpolation);
+		AddKeyFrameToChannel(RotationYChannel, FrameNumber, Rotation.Pitch, KeyInterpolation);
+		AddKeyFrameToChannel(RotationZChannel, FrameNumber, Rotation.Yaw, KeyInterpolation);
+	}
+}
 
-		AddKeyToChannel(RotationXChannel, FrameNumber, Rotation.Roll, EMovieSceneKeyInterpolation::Auto);
-		AddKeyToChannel(RotationYChannel, FrameNumber, Rotation.Pitch, EMovieSceneKeyInterpolation::Auto);
-		AddKeyToChannel(RotationZChannel, FrameNumber, Rotation.Yaw, EMovieSceneKeyInterpolation::Auto);
+void ASequencerFactory::AddKeyFrameToChannel(FMovieSceneDoubleChannel* Channel, const FFrameNumber& FrameNumber, const double Value, const EKeyInterpolation KeyInterpolation)
+{
+	switch (KeyInterpolation) {
+	case EKeyInterpolation::Auto:
+		AddKeyToChannel(Channel, FrameNumber, Value, EMovieSceneKeyInterpolation::Auto);
+		break;
+	case EKeyInterpolation::Linear:
+		Channel->AddLinearKey(FrameNumber, Value);
+		break;
+	case EKeyInterpolation::Constant:
+		Channel->AddConstantKey(FrameNumber, Value);
+		break;
+	case EKeyInterpolation::Cubic:
+		Channel->AddCubicKey(FrameNumber, Value);
+		break;
 	}
 }
 
 void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DTransformSection* TransformSection) const
 {
 	const TArray<FMovieSceneBinding>& ObjectBindings = SourceLevelSequence->GetMovieScene()->GetBindings();
-	
+
 	for (const FMovieSceneBinding& Binding : ObjectBindings)
 	{
 		const TArray<UMovieSceneTrack*>& Tracks = Binding.GetTracks();
-		
+
 		for (UMovieSceneTrack* Track : Tracks)
 		{
 			const TArray<UMovieSceneSection*>& TransformSections = Cast<UMovieScene3DTransformTrack>(Track)->GetAllSections();
@@ -123,11 +141,11 @@ void ASequencerFactory::AddKeyFramesFromSourceLevelSequence(const UMovieScene3DT
 
 				const FMovieSceneChannelProxy& SourceChannelProxy = SourceTransformSection->GetChannelProxy();
 				FMovieSceneChannelProxy& TargetChannelProxy = TransformSection->GetChannelProxy();
-			
+
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 0); // X
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 1); // Y
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 2); // Z
-			
+
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 3); // Roll
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 4); // Pitch
 				CopyChannel(SourceChannelProxy, TargetChannelProxy, 5); // Yaw
@@ -140,13 +158,27 @@ void ASequencerFactory::CopyChannel(const FMovieSceneChannelProxy& SourceChannel
 {
 	FMovieSceneDoubleChannel* SourceChannel = GetMovieSceneDoubleChannel(SourceChannelProxy, ChannelIndex);
 	FMovieSceneDoubleChannel* TargetChannel = GetMovieSceneDoubleChannel(TargetChannelProxy, ChannelIndex);
-	
+
 	const TArrayView<const FFrameNumber>& SourceTimes = SourceChannel->GetTimes();
 	const TArrayView<const FMovieSceneDoubleValue>& SourceValues = SourceChannel->GetValues();
 
-	for (int32 KeyIndex = 0; KeyIndex < SourceTimes.Num(); ++KeyIndex)
+	for (int32 i = 0; i < SourceTimes.Num(); ++i)
 	{
-		TargetChannel->AddLinearKey(SourceTimes[KeyIndex], SourceValues[KeyIndex].Value);
+		switch (SourceValues[i].InterpMode)
+		{
+		case RCIM_Linear:
+			TargetChannel->AddLinearKey(SourceTimes[i], SourceValues[i].Value);
+			break;
+		case RCIM_Constant:
+			TargetChannel->AddConstantKey(SourceTimes[i], SourceValues[i].Value);
+			break;
+		case RCIM_Cubic:
+			TargetChannel->AddCubicKey(SourceTimes[i], SourceValues[i].Value);
+			break;
+		default:
+			AddKeyToChannel(TargetChannel, SourceTimes[i], SourceValues[i].Value, EMovieSceneKeyInterpolation::Auto);
+			break;
+		}
 	}
 }
 
